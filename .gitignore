@@ -30,3 +30,17 @@ go.work.sum
 # Editor/IDE
 # .idea/
 # .vscode/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+
+# Node/Bun
+node_modules/
+frontend/dist/
+bun.lockb
+
+# MacOS
+.DS_Store
