@@ -111,12 +111,16 @@ class QoGame:
             # stone's connected group must have at least one liberty.
             if pos in self.classical:
                 _, own_liberties = self._group_and_liberties(pos, self.classical)
-                if not own_liberties:
+                if not own_liberties and not self._surrounded_by_own_color(pos, acting_player):
                     raise ValueError("Suicide is not allowed.")
             return events
         except ValueError:
             self._restore_state(snapshot)
             raise
+
+    def _surrounded_by_own_color(self, pos: tuple[int, int], color: StoneColor) -> bool:
+        neighbors = self._neighbors(pos[0], pos[1])
+        return all(self.classical.get(np) == color for np in neighbors)
 
     def place_superposition(self, positions: list[list[int]]) -> list[str]:
         self._validate_turn()
@@ -223,13 +227,13 @@ class QoGame:
         self.consecutive_passes += 1
         events = [f"{self.current_player} passed."]
 
-        if self.consecutive_passes >= 2:
+        if self.consecutive_passes >= 4:
             collapse_events = self._collapse_all_quantum()
             events.extend(collapse_events)
             self.game_over = True
             score = self._compute_area_score()
             events.append(
-                f"Game ended by consecutive passes. Score: B={score['B']}, W={score['W']}."
+                f"Game ended after two consecutive pass rounds. Score: B={score['B']}, W={score['W']}."
             )
             if score["B"] == score["W"]:
                 events.append("The game is a draw.")
