@@ -1,0 +1,1476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Qo — Quantum Go</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Rajdhani:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:        #05080f;
+  --bg2:       #0b1120;
+  --bg3:       #111827;
+  --panel:     rgba(12,18,32,0.92);
+  --border:    rgba(0,212,255,0.15);
+  --border2:   rgba(0,212,255,0.08);
+  --cyan:      #00d4ff;
+  --cyan-dim:  rgba(0,212,255,0.25);
+  --pink:      #ff4d9f;
+  --pink-dim:  rgba(255,77,159,0.2);
+  --gold:      #ffd43b;
+  --text:      #ccd6f6;
+  --text-dim:  #6b7fa3;
+  --text-muted:#3d4f70;
+  --black-stone:#0d0f1c;
+  --white-stone:#f0f0ff;
+  --board-warm:#1a0e03;
+  --grid:      rgba(160,110,40,0.55);
+  --good:      #4ade80;
+  --warn:      #fb923c;
+  --danger:    #f87171;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Rajdhani', sans-serif;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ─── Header ────────────────────────────────────── */
+header {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 12px 28px;
+  border-bottom: 1px solid var(--border);
+  background: var(--panel);
+  backdrop-filter: blur(12px);
+  z-index: 10;
+  flex-shrink: 0;
+}
+
+.logo {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.8rem;
+  font-weight: 900;
+  letter-spacing: 4px;
+  position: relative;
+}
+.logo-img {
+  height: 1.8rem;
+  width: auto;
+}
+
+.header-spacer { flex: 1; }
+
+.move-counter {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  letter-spacing: 2px;
+}
+.move-counter span { color: var(--cyan); }
+
+/* ─── Layout ─────────────────────────────────────── */
+.game-layout {
+  display: flex;
+  flex: 1;
+  gap: 0;
+  overflow: hidden;
+}
+
+.board-area {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  position: relative;
+  background: radial-gradient(ellipse at 50% 60%, rgba(0,60,100,0.12) 0%, transparent 70%);
+}
+
+#board-canvas {
+  display: block;
+  cursor: crosshair;
+  border-radius: 4px;
+  box-shadow:
+    0 0 0 1px rgba(0,212,255,0.1),
+    0 0 40px rgba(0,0,0,0.8),
+    0 0 80px rgba(0,212,255,0.05);
+}
+
+/* ─── Side Panel ─────────────────────────────────── */
+.side-panel {
+  width: 380px;
+  flex-shrink: 0;
+  background: var(--panel);
+  border-left: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.panel-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+/* ─── Panel Sections ─────────────────────────────── */
+.section {
+  background: rgba(255,255,255,0.02);
+  border: 1px solid var(--border2);
+  border-radius: 8px;
+  padding: 12px;
+}
+.section-row {
+  display: flex;
+  gap: 14px;
+}
+.section-title {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.6rem;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+}
+
+/* ─── Turn Indicator ─────────────────────────────── */
+.turn-indicator {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: linear-gradient(135deg, rgba(0,212,255,0.05), transparent);
+  transition: all 0.4s;
+}
+.turn-indicator.white-turn {
+  border-color: rgba(240,240,255,0.2);
+  background: linear-gradient(135deg, rgba(200,200,255,0.05), transparent);
+}
+.turn-stone-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  position: relative;
+}
+.turn-stone-icon.black {
+  background: radial-gradient(circle at 35% 35%, #404060, #0d0f1c);
+  box-shadow: 0 0 12px rgba(0,212,255,0.6), inset 0 1px 1px rgba(100,120,200,0.3);
+}
+.turn-stone-icon.white {
+  background: radial-gradient(circle at 35% 35%, #ffffff, #c8c8e8);
+  box-shadow: 0 0 12px rgba(255,255,255,0.5), inset 0 1px 1px rgba(255,255,255,0.8);
+}
+.turn-label {
+  flex: 1;
+}
+.turn-player {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: 1px;
+}
+.turn-sub {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.6rem;
+  color: var(--text-muted);
+  letter-spacing: 2px;
+}
+
+/* ─── Move Type ──────────────────────────────────── */
+.move-types {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.move-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border: 1px solid var(--border2);
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  transition: all 0.2s;
+  text-align: left;
+  width: 100%;
+}
+.move-btn:hover {
+  border-color: var(--border);
+  color: var(--text);
+  background: rgba(255,255,255,0.03);
+}
+.move-btn.active {
+  border-color: var(--cyan);
+  color: var(--cyan);
+  background: rgba(0,212,255,0.07);
+  box-shadow: 0 0 8px rgba(0,212,255,0.1);
+}
+.move-icon {
+  font-size: 1.1rem;
+  width: 22px;
+  text-align: center;
+}
+.move-label { flex: 1; }
+.move-keys {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.6rem;
+  color: var(--text-muted);
+  background: rgba(255,255,255,0.05);
+  padding: 1px 5px;
+  border-radius: 3px;
+}
+
+/* ─── Board Size ─────────────────────────────────── */
+.board-size-options {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.size-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border: 1px solid var(--border2);
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  transition: all 0.2s;
+  text-align: left;
+  width: 100%;
+}
+.size-btn:hover {
+  border-color: var(--border);
+  color: var(--text);
+  background: rgba(255,255,255,0.03);
+}
+.size-btn.active {
+  border-color: var(--cyan);
+  color: var(--cyan);
+  background: rgba(0,212,255,0.07);
+  box-shadow: 0 0 8px rgba(0,212,255,0.1);
+}
+
+/* ─── Selection Status ───────────────────────────── */
+.selection-box {
+  min-height: 52px;
+  background: rgba(0,212,255,0.04);
+  border: 1px dashed rgba(0,212,255,0.2);
+  border-radius: 7px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.selection-hint {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.62rem;
+  color: var(--text-muted);
+  letter-spacing: 1px;
+}
+.selection-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.chip {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.65rem;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: rgba(0,212,255,0.12);
+  border: 1px solid rgba(0,212,255,0.3);
+  color: var(--cyan);
+  letter-spacing: 1px;
+}
+.chip.entangle { background: rgba(255,77,159,0.12); border-color: rgba(255,77,159,0.3); color: var(--pink); }
+
+.confirm-row {
+  display: flex;
+  gap: 6px;
+  margin-top: 4px;
+}
+.btn-confirm {
+  flex: 1;
+  padding: 6px;
+  border-radius: 5px;
+  border: 1px solid var(--good);
+  background: rgba(74,222,128,0.08);
+  color: var(--good);
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 600;
+  font-size: 0.8rem;
+  cursor: pointer;
+  letter-spacing: 1px;
+  transition: all 0.2s;
+}
+.btn-confirm:hover { background: rgba(74,222,128,0.15); }
+.btn-cancel {
+  padding: 6px 10px;
+  border-radius: 5px;
+  border: 1px solid var(--border2);
+  background: transparent;
+  color: var(--text-muted);
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-cancel:hover { color: var(--danger); border-color: var(--danger); }
+
+/* ─── Action Buttons ─────────────────────────────── */
+.action-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+.action-btn {
+  padding: 9px 8px;
+  border-radius: 7px;
+  border: 1px solid var(--border2);
+  background: transparent;
+  color: var(--text-dim);
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 600;
+  font-size: 0.82rem;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+}
+.action-btn:hover { border-color: var(--border); color: var(--text); }
+.action-btn.measure-group-btn:hover { border-color: var(--gold); color: var(--gold); background: rgba(255,212,59,0.06); }
+.action-btn.measure-group-btn.active { border-color: var(--gold); color: var(--gold); background: rgba(255,212,59,0.1); box-shadow: 0 0 8px rgba(255,212,59,0.2); }
+.action-btn.pass-btn:hover { border-color: var(--pink); color: var(--pink); background: rgba(255,77,159,0.06); }
+.action-btn.reset-btn {
+  grid-column: 1 / -1;
+  border-color: rgba(255,50,50,0.2);
+  color: var(--text-muted);
+}
+.action-btn.reset-btn:hover { border-color: var(--danger); color: var(--danger); background: rgba(248,113,113,0.05); }
+
+/* ─── Captures ───────────────────────────────────── */
+.captures-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.capture-cell {
+  text-align: center;
+  padding: 8px;
+  border-radius: 6px;
+  background: rgba(255,255,255,0.02);
+  border: 1px solid var(--border2);
+}
+.capture-player {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.58rem;
+  letter-spacing: 2px;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+.capture-count {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+/* ─── Event Log ──────────────────────────────────── */
+.event-log {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  max-height: 200px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+.event-item {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.62rem;
+  padding: 5px 8px;
+  border-radius: 4px;
+  border-left: 2px solid transparent;
+  color: var(--text-dim);
+  letter-spacing: 0.5px;
+  animation: fadeIn 0.3s ease;
+  line-height: 1.4;
+}
+@keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; } }
+
+.event-item.classical    { border-color: var(--text-muted); }
+.event-item.superpos     { border-color: #a29bfe; color: #a29bfe; }
+.event-item.entangle     { border-color: var(--pink); color: var(--pink); }
+.event-item.tunneling    { border-color: var(--gold); color: var(--gold); background: rgba(255,212,59,0.05); }
+.event-item.superpos_collapse,.event-item.entangle_collapse { border-color: #74b9ff; color: #74b9ff; }
+.event-item.game_over    { border-color: var(--cyan); color: var(--cyan); background: rgba(0,212,255,0.07); font-weight: bold; }
+.event-item.quantum_collapse_trigger { border-color: var(--warn); color: var(--warn); }
+.event-item.pass         { border-color: var(--text-muted); }
+.event-item.measure      { border-color: var(--gold); color: var(--gold); }
+
+/* ─── Quantum Legend ─────────────────────────────── */
+.legend-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.78rem;
+  color: var(--text-dim);
+}
+.legend-icon {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+}
+.leg-classic-b { background: radial-gradient(circle at 35% 35%, #404060, #0d0f1c); box-shadow: 0 0 6px rgba(0,212,255,0.3); }
+.leg-classic-w { background: radial-gradient(circle at 35% 35%, #fff, #c8c8e8); box-shadow: 0 0 6px rgba(255,255,255,0.4); }
+.leg-super     { background: rgba(162,155,254,0.3); border: 2px dashed #a29bfe; }
+.leg-entangle  { background: rgba(255,77,159,0.2); border: 2px solid #ff4d9f; }
+
+/* ─── Game Over Modal ────────────────────────────── */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(5,8,15,0.85);
+  backdrop-filter: blur(8px);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 100;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.4s;
+}
+.modal-overlay.visible { opacity: 1; pointer-events: all; }
+.modal {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 40px;
+  text-align: center;
+  max-width: 340px;
+  box-shadow: 0 0 60px rgba(0,212,255,0.15);
+  animation: modalIn 0.4s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes modalIn { from { transform: scale(0.85); opacity: 0; } }
+.modal-close-btn {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.08);
+  color: var(--text);
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.modal-close-btn:hover {
+  background: rgba(255,255,255,0.15);
+}
+.modal-logo {
+  font-family: 'Orbitron', monospace;
+  font-size: 2.5rem;
+  font-weight: 900;
+  background: linear-gradient(135deg, var(--cyan), var(--pink));
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 8px;
+}
+.modal-winner {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+.modal-scores {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.85rem;
+  color: var(--text-dim);
+  margin-bottom: 24px;
+  letter-spacing: 1px;
+}
+.modal-btn {
+  padding: 12px 32px;
+  border-radius: 8px;
+  border: 1px solid var(--cyan);
+  background: rgba(0,212,255,0.1);
+  color: var(--cyan);
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 700;
+  font-size: 0.8rem;
+  letter-spacing: 3px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.modal-btn:hover { background: rgba(0,212,255,0.2); box-shadow: 0 0 20px rgba(0,212,255,0.2); }
+
+/* ─── Error Toast ────────────────────────────────── */
+.toast {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%) translateY(80px);
+  background: rgba(248,113,113,0.15);
+  border: 1px solid var(--danger);
+  color: var(--danger);
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.75rem;
+  letter-spacing: 1px;
+  z-index: 200;
+  transition: transform 0.3s;
+  backdrop-filter: blur(8px);
+}
+.toast.show { transform: translateX(-50%) translateY(0); }
+
+.quantum-tag {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.55rem;
+  background: rgba(0,212,255,0.1);
+  border: 1px solid var(--cyan-dim);
+  color: var(--cyan);
+  padding: 2px 6px;
+  border-radius: 4px;
+  letter-spacing: 2px;
+}
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<header>
+  <div>
+    <div class="logo">
+    <img src="QoLogo.png" alt="Qo Logo" class="logo-img">
+  </div>
+    <span class="logo-sub">Quantum Go</span>
+  </div>
+  <div class="header-spacer"></div>
+  <span class="quantum-tag">9×9 BOARD</span>
+  <div class="move-counter">MOVE <span id="move-num">0</span></div>
+</header>
+
+<!-- Main Layout -->
+<div class="game-layout">
+  <!-- Board -->
+  <div class="board-area">
+    <canvas id="board-canvas" width="600" height="600"></canvas>
+  </div>
+
+  <!-- Side Panel -->
+  <div class="side-panel">
+    <div class="panel-scroll">
+
+      <!-- Turn Indicator -->
+      <div class="turn-indicator" id="turn-indicator">
+        <div class="turn-stone-icon black" id="turn-stone"></div>
+        <div class="turn-label">
+          <div class="turn-player" id="turn-player">Black</div>
+          <div class="turn-sub">TO PLAY</div>
+        </div>
+      </div>
+
+      <!-- Move Type and Board Size -->
+      <div class="section-row">
+        <div class="section">
+          <div class="section-title">Move Type</div>
+          <div class="move-types">
+            <button class="move-btn active" data-mode="classical" onclick="setMode('classical')">
+              <span class="move-icon">●</span>
+              <span class="move-label">Classical</span>
+              <span class="move-keys">click</span>
+            </button>
+            <button class="move-btn" data-mode="superpos" onclick="setMode('superpos')">
+              <span class="move-icon">⊘</span>
+              <span class="move-label">Superposition</span>
+              <span class="move-keys">2 clicks</span>
+            </button>
+            <button class="move-btn" data-mode="entangle" onclick="setMode('entangle')">
+              <span class="move-icon">⊗</span>
+              <span class="move-label">Entangle</span>
+              <span class="move-keys">2–3 clicks</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">Board Size</div>
+          <div class="board-size-options">
+            <button class="size-btn" data-size="5" onclick="setBoardSize(5)">5×5</button>
+            <button class="size-btn active" data-size="9" onclick="setBoardSize(9)">9×9</button>
+            <button class="size-btn" data-size="13" onclick="setBoardSize(13)">13×13</button>
+            <button class="size-btn" data-size="19" onclick="setBoardSize(19)">19×19</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Selection Status -->
+      <div class="section" id="selection-section">
+        <div class="section-title">Selection</div>
+        <div class="selection-box">
+          <div class="selection-hint" id="sel-hint">Click an intersection to place a stone</div>
+          <div class="selection-chips" id="sel-chips"></div>
+          <div class="confirm-row" id="confirm-row" style="display:none">
+            <button class="btn-confirm" onclick="confirmMove()">CONFIRM</button>
+            <button class="btn-cancel" onclick="cancelSelection()">✕</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="section">
+        <div class="section-title">Actions</div>
+        <div class="action-row">
+          <button class="action-btn measure-group-btn" onclick="toggleMeasureMode()">🎯 MEASURE GROUP</button>
+          <button class="action-btn pass-btn" onclick="doPass()">⏸ PASS</button>
+          <button class="action-btn reset-btn" onclick="doReset()">↺ NEW GAME</button>
+        </div>
+      </div>
+
+      <!-- Captures and Legend -->
+      <div class="section-row">
+        <div class="section">
+          <div class="section-title">Captures</div>
+          <div class="captures-row">
+            <div class="capture-cell">
+              <div class="capture-player">● BLACK</div>
+              <div class="capture-count" id="black-cap">0</div>
+            </div>
+            <div class="capture-cell">
+              <div class="capture-player">○ WHITE</div>
+              <div class="capture-count" id="white-cap">0</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">Stone Types</div>
+          <div class="legend-grid">
+            <div class="legend-item">
+              <div class="legend-icon leg-classic-b"></div>
+              <span>Classical stone</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-icon leg-classic-w"></div>
+              <span>Classical stone</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-icon leg-super"></div>
+              <span>Superposition (dashed ring)</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-icon leg-entangle"></div>
+              <span>Entangled (solid ring)</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Event Log -->
+      <div class="section">
+        <div class="section-title">Event Log</div>
+        <div class="event-log" id="event-log">
+          <div class="event-item">Game started. Black plays first.</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Game Over Modal -->
+<div class="modal-overlay" id="modal">
+  <div class="modal" style="position:relative;">
+    <button class="modal-close-btn" onclick="closeModal()" style="position:absolute; top:12px; right:12px; z-index:10;">✕</button>
+    <div class="modal-logo">QO</div>
+    <div class="modal-winner" id="modal-winner">—</div>
+    <div class="modal-scores" id="modal-scores"></div>
+    <button class="modal-btn" onclick="doReset()">PLAY AGAIN</button>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── Constants ────────────────────────────────────────────────────────────────
+let N = 9; // Board size (N×N)
+const CANVAS_SIZE = 600;
+const PAD = 44;
+let BOARD_PX = CANVAS_SIZE - 2 * PAD;
+let CELL = BOARD_PX / (N - 1);
+let STONE_R = CELL * 0.43;
+let HOSHI = [{r:2,c:2},{r:2,c:6},{r:4,c:4},{r:6,c:2},{r:6,c:6}];
+let COLS = 'ABCDEFGHJ'; // skip I (traditional)
+
+const GROUP_COLORS = [
+  '#a29bfe','#fd79a8','#ffeaa7','#55efc4',
+  '#74b9ff','#ff7675','#81ecec','#fdcb6e'
+];
+
+// ─── Board Constants Update ───────────────────────────────────────────────────
+function updateBoardConstants() {
+    BOARD_PX = CANVAS_SIZE - 2 * PAD;
+    CELL = BOARD_PX / (N - 1);
+    STONE_R = CELL * 0.43;
+    if (N === 5) {
+        HOSHI = [{r:2,c:2}];
+        COLS = 'ABCDE';
+    } else if (N === 9) {
+        HOSHI = [{r:2,c:2},{r:2,c:6},{r:4,c:4},{r:6,c:2},{r:6,c:6}];
+        COLS = 'ABCDEFGHJ';
+    } else if (N === 13) {
+        HOSHI = [{r:3,c:3},{r:3,c:9},{r:6,c:6},{r:9,c:3},{r:9,c:9}];
+        COLS = 'ABCDEFGHJKLMN';
+    } else if (N === 19) {
+        HOSHI = [{r:3,c:3},{r:3,c:9},{r:3,c:15},{r:9,c:3},{r:9,c:9},{r:9,c:15},{r:15,c:3},{r:15,c:9},{r:15,c:15}];
+        COLS = 'ABCDEFGHJKLMNOPQRST';
+    }
+}
+
+// ─── State ────────────────────────────────────────────────────────────────────
+let gameState = null;
+let moveMode  = 'classical';
+let selPos    = []; // selected positions (Pos objects)
+let hoverPos  = null;
+let phase     = 0;  // animation clock
+let particles = []; // [{x,y,vx,vy,life,maxLife,color}]
+let measureMode = false;
+
+// ─── Canvas Setup ────────────────────────────────────────────────────────────
+const canvas = document.getElementById('board-canvas');
+const ctx    = canvas.getContext('2d');
+
+// Scale for high-DPI
+const dpr = window.devicePixelRatio || 1;
+canvas.width  = CANVAS_SIZE * dpr;
+canvas.height = CANVAS_SIZE * dpr;
+canvas.style.width  = CANVAS_SIZE + 'px';
+canvas.style.height = CANVAS_SIZE + 'px';
+ctx.scale(dpr, dpr);
+
+updateBoardConstants();
+
+// ─── Coordinate Helpers ───────────────────────────────────────────────────────
+function boardToPixel(r, c) {
+  return { x: PAD + c * CELL, y: PAD + r * CELL };
+}
+function pixelToBoard(px, py) {
+  const c = Math.round((px - PAD) / CELL);
+  const r = Math.round((py - PAD) / CELL);
+  if (c < 0 || c >= N || r < 0 || r >= N) return null;
+  // Snap tolerance
+  const {x, y} = boardToPixel(r, c);
+  if (Math.hypot(px - x, py - y) > CELL * 0.55) return null;
+  return {row: r, col: c};
+}
+function posEq(a, b) { return a.row === b.row && a.col === b.col; }
+
+// ─── Rendering ────────────────────────────────────────────────────────────────
+function render() {
+  ctx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+  drawBoard();
+  if (gameState) {
+    drawConnections();
+    drawStones();
+    drawParticles();
+    drawHover();
+    drawSelection();
+  }
+  phase += 0.045;
+  requestAnimationFrame(render);
+}
+
+function drawBoard() {
+  // Background — warm dark wood
+  const bg = ctx.createRadialGradient(CANVAS_SIZE/2, CANVAS_SIZE/2, 0, CANVAS_SIZE/2, CANVAS_SIZE/2, CANVAS_SIZE*0.7);
+  bg.addColorStop(0, '#211306');
+  bg.addColorStop(1, '#130b02');
+  ctx.fillStyle = bg;
+  ctx.beginPath();
+  ctx.roundRect(0, 0, CANVAS_SIZE, CANVAS_SIZE, 4);
+  ctx.fill();
+
+  // Subtle grain lines
+  ctx.save();
+  ctx.globalAlpha = 0.03;
+  for (let i = 0; i < 60; i++) {
+    ctx.beginPath();
+    ctx.moveTo(0, i * (CANVAS_SIZE / 60));
+    ctx.lineTo(CANVAS_SIZE, i * (CANVAS_SIZE / 60) + Math.sin(i * 0.4) * 8);
+    ctx.strokeStyle = '#c8a060';
+    ctx.lineWidth = 0.5;
+    ctx.stroke();
+  }
+  ctx.restore();
+
+  // Grid lines
+  ctx.strokeStyle = 'rgba(160,110,40,0.55)';
+  ctx.lineWidth = 0.8;
+  for (let i = 0; i < N; i++) {
+    const {x: x0, y: y0} = boardToPixel(i, 0);
+    const {x: x1}        = boardToPixel(i, N-1);
+    const {x: bx0, y: by0} = boardToPixel(0, i);
+    const {y: by1}          = boardToPixel(N-1, i);
+    // Row line
+    ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y0); ctx.stroke();
+    // Col line
+    ctx.beginPath(); ctx.moveTo(bx0, by0); ctx.lineTo(bx0, by1); ctx.stroke();
+  }
+
+  // Border lines (slightly thicker)
+  ctx.strokeStyle = 'rgba(180,120,40,0.7)';
+  ctx.lineWidth = 1.5;
+  const tl = boardToPixel(0,0), br = boardToPixel(N-1,N-1);
+  ctx.strokeRect(tl.x, tl.y, br.x - tl.x, br.y - tl.y);
+
+  // Hoshi (star points)
+  HOSHI.forEach(({r,c}) => {
+    const {x,y} = boardToPixel(r,c);
+    ctx.beginPath();
+    ctx.arc(x, y, 4, 0, Math.PI*2);
+    ctx.fillStyle = 'rgba(170,120,50,0.85)';
+    ctx.fill();
+  });
+
+  // Coordinate labels
+  ctx.font = '500 10px "DM Mono"';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = 'rgba(160,110,40,0.5)';
+  for (let i = 0; i < N; i++) {
+    const {x} = boardToPixel(0, i);
+    ctx.fillText(COLS[i], x, PAD - 18);
+    ctx.fillText(COLS[i], x, CANVAS_SIZE - PAD + 18);
+    const {y} = boardToPixel(i, 0);
+    ctx.fillText(N - i, PAD - 18, y);
+    ctx.fillText(N - i, CANVAS_SIZE - PAD + 18, y);
+  }
+}
+
+function drawConnections() {
+  if (!gameState) return;
+
+  // Superposition connections (animated sine wave)
+  (gameState.super_groups || []).forEach(sg => {
+    const color = GROUP_COLORS[sg.color_idx % GROUP_COLORS.length];
+    const p1 = boardToPixel(sg.pos1.row, sg.pos1.col);
+    const p2 = boardToPixel(sg.pos2.row, sg.pos2.col);
+    drawWaveLink(p1.x, p1.y, p2.x, p2.y, color, phase);
+  });
+
+  // Entanglement connections (particle line)
+  (gameState.ent_groups || []).forEach(eg => {
+    const color = GROUP_COLORS[eg.color_idx % GROUP_COLORS.length];
+    const stones = eg.stones || [];
+    for (let i = 0; i < stones.length; i++) {
+      for (let j = i+1; j < stones.length; j++) {
+        const pa = boardToPixel(stones[i].row, stones[i].col);
+        const pb = boardToPixel(stones[j].row, stones[j].col);
+        drawEntangleLink(pa.x, pa.y, pb.x, pb.y, color, phase);
+      }
+    }
+  });
+}
+
+function drawWaveLink(x1, y1, x2, y2, color, ph) {
+  const dx = x2-x1, dy = y2-y1;
+  const dist = Math.hypot(dx, dy);
+  if (dist < 1) return;
+  const nx = -dy/dist, ny = dx/dist;
+  const steps = 50;
+  ctx.save();
+  ctx.globalAlpha = 0.55 + 0.2 * Math.sin(ph * 1.5);
+  ctx.beginPath();
+  ctx.moveTo(x1, y1);
+  for (let i = 1; i <= steps; i++) {
+    const t = i / steps;
+    const bx = x1 + dx * t;
+    const by = y1 + dy * t;
+    const wave = 8 * Math.sin(t * Math.PI * 4 + ph * 3) * Math.sin(t * Math.PI);
+    ctx.lineTo(bx + nx * wave, by + ny * wave);
+  }
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2;
+  ctx.shadowBlur = 8;
+  ctx.shadowColor = color;
+  ctx.stroke();
+  ctx.shadowBlur = 0;
+  ctx.restore();
+}
+
+function drawEntangleLink(x1, y1, x2, y2, color, ph) {
+  ctx.save();
+  ctx.globalAlpha = 0.45;
+  ctx.beginPath();
+  ctx.moveTo(x1, y1);
+  ctx.lineTo(x2, y2);
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([4, 4]);
+  ctx.lineDashOffset = -ph * 6;
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.restore();
+
+  // Travelling particle
+  const t = (Math.sin(ph * 1.3) + 1) / 2;
+  const px = x1 + (x2 - x1) * t;
+  const py = y1 + (y2 - y1) * t;
+  ctx.save();
+  ctx.globalAlpha = 0.9;
+  ctx.beginPath();
+  ctx.arc(px, py, 3.5, 0, Math.PI * 2);
+  ctx.fillStyle = color;
+  ctx.shadowBlur = 10;
+  ctx.shadowColor = color;
+  ctx.fill();
+  ctx.shadowBlur = 0;
+  ctx.restore();
+}
+
+function drawStones() {
+  if (!gameState) return;
+  const board = gameState.board;
+  for (let r = 0; r < N; r++) {
+    for (let c = 0; c < N; c++) {
+      const cell = board[r][c];
+      if (cell.owner === 0) continue;
+      const {x, y} = boardToPixel(r, c);
+      const gid = cell.group_id;
+
+      if (cell.stype === 1) { // Classical
+        drawClassicalStone(x, y, cell.owner);
+      } else if (cell.stype === 2) { // Superposed
+        const sg = (gameState.super_groups||[]).find(g => g.id === gid);
+        const color = sg ? GROUP_COLORS[sg.color_idx % GROUP_COLORS.length] : '#a29bfe';
+        drawSuperposedStone(x, y, cell.owner, color);
+      } else if (cell.stype === 3) { // Entangled
+        const eg = (gameState.ent_groups||[]).find(g => g.id === gid);
+        const color = eg ? GROUP_COLORS[eg.color_idx % GROUP_COLORS.length] : '#fd79a8';
+        drawEntangledStone(x, y, cell.owner, color);
+      }
+    }
+  }
+}
+
+function drawClassicalStone(x, y, owner) {
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(x, y, STONE_R, 0, Math.PI * 2);
+  if (owner === 1) {
+    const grad = ctx.createRadialGradient(x - STONE_R*0.3, y - STONE_R*0.3, STONE_R*0.05, x, y, STONE_R);
+    grad.addColorStop(0, '#5060a0');
+    grad.addColorStop(0.4, '#1a1e38');
+    grad.addColorStop(1, '#0d0f1c');
+    ctx.fillStyle = grad;
+    ctx.shadowBlur = 14;
+    ctx.shadowColor = 'rgba(80,100,220,0.5)';
+  } else {
+    const grad = ctx.createRadialGradient(x - STONE_R*0.3, y - STONE_R*0.3, STONE_R*0.05, x, y, STONE_R);
+    grad.addColorStop(0, '#ffffff');
+    grad.addColorStop(0.5, '#e0e0f5');
+    grad.addColorStop(1, '#b0b0d0');
+    ctx.fillStyle = grad;
+    ctx.shadowBlur = 14;
+    ctx.shadowColor = 'rgba(200,200,255,0.5)';
+  }
+  ctx.fill();
+  ctx.strokeStyle = owner === 1 ? 'rgba(80,100,200,0.25)' : 'rgba(200,200,255,0.4)';
+  ctx.lineWidth = 0.5;
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawSuperposedStone(x, y, owner, color) {
+  ctx.save();
+  // Ghost effect
+  const pulse = 0.55 + 0.25 * Math.sin(phase * 2.2);
+  ctx.globalAlpha = pulse;
+  drawClassicalStone(x, y, owner);
+  ctx.restore();
+
+  // Dashed ring
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(x, y, STONE_R + 5, 0, Math.PI * 2);
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2;
+  ctx.setLineDash([5, 4]);
+  ctx.lineDashOffset = -phase * 4;
+  ctx.globalAlpha = 0.85;
+  ctx.shadowBlur = 8;
+  ctx.shadowColor = color;
+  ctx.stroke();
+  ctx.restore();
+
+  // ψ symbol
+  ctx.save();
+  ctx.fillStyle = color;
+  ctx.font = `bold ${STONE_R * 0.8}px "Rajdhani"`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.globalAlpha = 0.7;
+  ctx.fillText('ψ', x, y);
+  ctx.restore();
+}
+
+function drawEntangledStone(x, y, owner, color) {
+  drawClassicalStone(x, y, owner);
+
+  // Spinning arc
+  ctx.save();
+  const start = phase * 2;
+  const arcLen = Math.PI * 1.3;
+  ctx.beginPath();
+  ctx.arc(x, y, STONE_R + 5, start, start + arcLen);
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2.5;
+  ctx.lineCap = 'round';
+  ctx.globalAlpha = 0.9;
+  ctx.shadowBlur = 10;
+  ctx.shadowColor = color;
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.arc(x, y, STONE_R + 5, start + Math.PI, start + Math.PI + arcLen);
+  ctx.globalAlpha = 0.4;
+  ctx.stroke();
+  ctx.restore();
+
+  // ∞ symbol
+  ctx.save();
+  ctx.fillStyle = color;
+  ctx.font = `bold ${STONE_R * 0.65}px "Rajdhani"`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.globalAlpha = 0.8;
+  ctx.fillText('∞', x, y);
+  ctx.restore();
+}
+
+function drawHover() {
+  if (!hoverPos || !gameState || gameState.game_over) return;
+  const {x, y} = boardToPixel(hoverPos.row, hoverPos.col);
+  const cell = gameState.board[hoverPos.row][hoverPos.col];
+
+  if (moveMode === 'classical' && cell.owner === 0) {
+    ctx.save();
+    ctx.globalAlpha = 0.4;
+    drawClassicalStone(x, y, gameState.turn);
+    ctx.restore();
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(x, y, STONE_R + 3, 0, Math.PI*2);
+    ctx.strokeStyle = gameState.turn === 1 ? 'rgba(80,100,200,0.6)' : 'rgba(200,200,255,0.6)';
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([3,3]);
+    ctx.stroke();
+    ctx.restore();
+  } else if ((moveMode === 'superpos' || moveMode === 'entangle') && !selPos.some(p => posEq(p, hoverPos))) {
+    const owned = cell.owner !== 0;
+    if (moveMode === 'superpos' && !owned || moveMode === 'entangle' && owned && cell.stype === 1) {
+      ctx.save();
+      ctx.globalAlpha = 0.35;
+      ctx.beginPath();
+      ctx.arc(x, y, STONE_R + 6, 0, Math.PI*2);
+      ctx.fillStyle = 'rgba(0,212,255,0.15)';
+      ctx.strokeStyle = 'rgba(0,212,255,0.5)';
+      ctx.lineWidth = 1.5;
+      ctx.fill();
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
+}
+
+function drawSelection() {
+  selPos.forEach((pos, i) => {
+    const {x, y} = boardToPixel(pos.row, pos.col);
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(x, y, STONE_R + 8, 0, Math.PI*2);
+    const pulse = 0.6 + 0.3 * Math.sin(phase * 3 + i);
+    ctx.strokeStyle = `rgba(0,212,255,${pulse})`;
+    ctx.lineWidth = 2;
+    ctx.shadowBlur = 12;
+    ctx.shadowColor = 'rgba(0,212,255,0.6)';
+    ctx.stroke();
+    ctx.restore();
+
+    // Selection index badge
+    ctx.save();
+    ctx.font = 'bold 10px "DM Mono"';
+    ctx.fillStyle = 'rgba(0,212,255,0.9)';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(i + 1, x + STONE_R + 8, y - STONE_R - 4);
+    ctx.restore();
+  });
+}
+
+function drawParticles() {
+  particles = particles.filter(p => p.life > 0);
+  particles.forEach(p => {
+    const alpha = p.life / p.maxLife;
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.size * alpha, 0, Math.PI*2);
+    ctx.fillStyle = p.color;
+    ctx.shadowBlur = 8;
+    ctx.shadowColor = p.color;
+    ctx.fill();
+    ctx.restore();
+    p.x += p.vx;
+    p.y += p.vy;
+    p.vy += 0.05; // gravity
+    p.life--;
+  });
+}
+
+function spawnParticles(r, c, color, count = 20) {
+  const {x, y} = boardToPixel(r, c);
+  for (let i = 0; i < count; i++) {
+    const angle = (Math.PI * 2 * i) / count + Math.random() * 0.5;
+    const speed = 1.5 + Math.random() * 3;
+    particles.push({
+      x, y,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      life: 40 + Math.random() * 30,
+      maxLife: 70,
+      color,
+      size: 2 + Math.random() * 3,
+    });
+  }
+}
+
+// ─── Interaction ──────────────────────────────────────────────────────────────
+canvas.addEventListener('mousemove', e => {
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = CANVAS_SIZE / rect.width;
+  const scaleY = CANVAS_SIZE / rect.height;
+  const px = (e.clientX - rect.left) * scaleX;
+  const py = (e.clientY - rect.top)  * scaleY;
+  hoverPos = pixelToBoard(px, py);
+});
+canvas.addEventListener('mouseleave', () => { hoverPos = null; });
+
+canvas.addEventListener('click', e => {
+  if (!gameState || gameState.game_over) return;
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = CANVAS_SIZE / rect.width;
+  const scaleY = CANVAS_SIZE / rect.height;
+  const px = (e.clientX - rect.left) * scaleX;
+  const py = (e.clientY - rect.top)  * scaleY;
+  const pos = pixelToBoard(px, py);
+  if (!pos) return;
+
+  const cell = gameState.board[pos.row][pos.col];
+
+  if (measureMode) {
+    if (cell.stype !== 1 && cell.group_id >= 0) {
+      sendMove('measure_group', [pos]);
+    } else {
+      showToast('Click on a superposition or entangled stone to measure its group');
+    }
+    return;
+  }
+
+  if (moveMode === 'classical') {
+    if (cell.owner !== 0) { showToast('Position occupied'); return; }
+    sendMove('classical', [pos]);
+
+  } else if (moveMode === 'superpos') {
+    if (cell.owner !== 0) { showToast('Must select empty positions'); return; }
+    if (selPos.some(p => posEq(p, pos))) { showToast('Already selected'); return; }
+    selPos.push(pos);
+    updateSelectionUI();
+    if (selPos.length === 2) showConfirm();
+
+  } else if (moveMode === 'entangle') {
+    if (cell.owner === 0) { showToast('Select a stone to entangle'); return; }
+    if (cell.stype !== 1) { showToast('Only classical stones can be entangled'); return; }
+    if (selPos.some(p => posEq(p, pos))) { showToast('Already selected'); return; }
+    if (selPos.length >= 3) { showToast('Max 3 stones'); return; }
+    selPos.push(pos);
+    updateSelectionUI();
+    if (selPos.length >= 2) showConfirm();
+  }
+});
+
+// ─── Mode Controls ────────────────────────────────────────────────────────────
+function setMode(mode) {
+  if (measureMode) {
+    measureMode = false;
+    document.querySelector('.measure-group-btn').classList.remove('active');
+  }
+  moveMode = mode;
+  selPos = [];
+  document.querySelectorAll('.move-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.mode === mode);
+  });
+  updateSelectionUI();
+}
+
+function updateSelectionUI() {
+  const hint = document.getElementById('sel-hint');
+  const chips = document.getElementById('sel-chips');
+  const confirmRow = document.getElementById('confirm-row');
+
+  if (measureMode) {
+    hint.textContent = 'Click on a superposition or entangled stone to measure its group';
+    chips.innerHTML = '';
+    confirmRow.style.display = 'none';
+    return;
+  }
+
+  chips.innerHTML = '';
+  selPos.forEach(p => {
+    const chip = document.createElement('div');
+    chip.className = 'chip' + (moveMode === 'entangle' ? ' entangle' : '');
+    chip.textContent = `${COLS[p.col]}${N - p.row}`;
+    chips.appendChild(chip);
+  });
+
+  confirmRow.style.display = 'none';
+
+  if (moveMode === 'classical') {
+    hint.textContent = 'Click an intersection to place a stone';
+  } else if (moveMode === 'superpos') {
+    const remaining = 2 - selPos.length;
+    hint.textContent = remaining > 0
+      ? `Select ${remaining} more empty position${remaining > 1 ? 's' : ''}`
+      : 'Confirm to place superposition';
+    if (selPos.length === 2) confirmRow.style.display = 'flex';
+  } else if (moveMode === 'entangle') {
+    const remaining = 2 - selPos.length;
+    hint.textContent = selPos.length < 2
+      ? `Select ${remaining} more stone${remaining > 1 ? 's' : ''} to entangle (2–3 total)`
+      : 'Confirm or select one more stone';
+    if (selPos.length >= 2) confirmRow.style.display = 'flex';
+  }
+}
+
+function showConfirm() { updateSelectionUI(); }
+
+function cancelSelection() {
+  selPos = [];
+  updateSelectionUI();
+}
+
+function confirmMove() {
+  if (moveMode === 'superpos' && selPos.length === 2) {
+    sendMove('superpos', selPos);
+  } else if (moveMode === 'entangle' && selPos.length >= 2) {
+    sendMove('entangle', selPos);
+  }
+}
+
+// ─── Actions ──────────────────────────────────────────────────────────────────
+function toggleMeasureMode() {
+  measureMode = !measureMode;
+  document.querySelector('.measure-group-btn').classList.toggle('active', measureMode);
+  updateSelectionUI();
+}
+function doPass()    { sendMove('pass', []); }
+async function doReset() {
+  document.getElementById('modal').classList.remove('visible');
+  const res = await fetch('/api/reset', {method:'POST'});
+  gameState = await res.json();
+  selPos = [];
+  particles = [];
+  updateUI();
+  document.getElementById('event-log').innerHTML =
+    '<div class="event-item">New game started. Black plays first.</div>';
+}
+
+// ─── API ──────────────────────────────────────────────────────────────────────
+async function sendMove(mtype, positions) {
+  selPos = [];
+  updateSelectionUI();
+  try {
+    const res = await fetch('/api/move', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({mtype, pos: positions})
+    });
+    const data = await res.json();
+    if (!data.ok && data.error) {
+      showToast(data.error);
+      return;
+    }
+    console.log('sendMove: server captures ->', data.state.black_captures, data.state.white_captures);
+    gameState = data.state;
+    handleEvents(data.state.events || []);
+    updateUI();
+    if (data.state.game_over) showGameOver(data.state);
+  } catch(e) {
+    showToast('Connection error');
+  }
+}
+
+async function fetchState() {
+  try {
+    const res = await fetch('/api/state');
+    gameState = await res.json();
+    N = gameState.size;
+    updateBoardConstants();
+    updateUI();
+  } catch(e) { /* server not running — demo mode */ }
+}
+
+async function setBoardSize(size) {
+  try {
+    const res = await fetch('/api/setBoardSize', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({size})
+    });
+    gameState = await res.json();
+    N = size;
+    updateBoardConstants();
+    updateUI();
+    document.querySelectorAll('.size-btn').forEach(btn => {
+      btn.classList.toggle('active', parseInt(btn.dataset.size) === size);
+    });
+    document.querySelector('.quantum-tag').textContent = `${size}×${size} BOARD`;
+    document.getElementById('event-log').innerHTML = `<div class="event-item">Board size changed to ${size}×${size}. New game started.</div>`;
+  } catch(e) {
+    showToast('Connection error');
+  }
+}
+
+async function fetchState() {
+  try {
+    const res = await fetch('/api/state');
+    gameState = await res.json();
+    updateUI();
+  } catch(e) { /* server not running — demo mode */ }
+}
+
+// ─── Event Handling ───────────────────────────────────────────────────────────
+function handleEvents(events) {
+  if (!events || events.length === 0) return;
+  const log = document.getElementById('event-log');
+
+  events.forEach(ev => {
+    const item = document.createElement('div');
+    item.className = `event-item ${ev.etype}`;
+    item.textContent = ev.msg;
+    log.appendChild(item);
+
+    // Particle effects for special events
+    if (ev.etype === 'tunneling' && ev.details) {
+      ev.details.forEach(td => {
+        const color = td.success ? '#55efc4' : '#ff7675';
+        spawnParticles(td.stone.row, td.stone.col, color, td.success ? 25 : 15);
+        if (td.success) spawnParticles(td.target.row, td.target.col, '#74b9ff', 20);
+      });
+    } else if (ev.etype === 'superpos_collapse' || ev.etype === 'entangle_collapse') {
+      // Find a relevant stone to spark
+      spawnParticles(Math.floor(Math.random()*N), Math.floor(Math.random()*N), '#a29bfe', 15);
+    }
+  });
+
+  // Keep log scrolled to bottom
+  log.scrollTop = log.scrollHeight;
+  // Trim to 50 entries
+  while (log.children.length > 50) log.removeChild(log.firstChild);
+}
+
+// ─── UI Updates ───────────────────────────────────────────────────────────────
+function updateUI() {
+  if (!gameState) return;
+
+  console.log('updateUI: display captures ->', gameState.black_captures, gameState.white_captures);
+
+  document.getElementById('move-num').textContent = gameState.move_count;
+  document.getElementById('black-cap').textContent = gameState.black_captures;
+  document.getElementById('white-cap').textContent = gameState.white_captures;
+
+  const turnInd   = document.getElementById('turn-indicator');
+  const turnStone = document.getElementById('turn-stone');
+  const turnLbl   = document.getElementById('turn-player');
+
+  if (gameState.turn === 1) {
+    turnInd.classList.remove('white-turn');
+    turnStone.className = 'turn-stone-icon black';
+    turnLbl.textContent = 'Black';
+  } else {
+    turnInd.classList.add('white-turn');
+    turnStone.className = 'turn-stone-icon white';
+    turnLbl.textContent = 'White';
+  }
+}
+
+function showGameOver(state) {
+  document.getElementById('modal-winner').textContent = state.win_msg;
+  document.getElementById('modal-scores').textContent =
+    `Black: ${state.black_score.toFixed(1)}   White: ${state.white_score.toFixed(1)}`;
+  document.getElementById('modal').classList.add('visible');
+}
+
+function closeModal() {
+  document.getElementById('modal').classList.remove('visible');
+}
+
+// ─── Toast ────────────────────────────────────────────────────────────────────
+let toastTimer = null;
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2800);
+}
+
+// ─── Boot ─────────────────────────────────────────────────────────────────────
+fetchState();
+render();
+</script>
+</body>
+</html>
