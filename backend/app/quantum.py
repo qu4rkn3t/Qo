@@ -1,20 +1,12 @@
 from __future__ import annotations
 
 from math import ceil, log2, sqrt
-import random
 from typing import Sequence
 
-try:
-    from qiskit import QuantumCircuit, transpile
-    from qiskit.providers.basic_provider import BasicProvider
+from qiskit import QuantumCircuit, transpile
+from qiskit.providers.basic_provider import BasicProvider
 
-    _backend = BasicProvider().get_backend("basic_simulator")
-    QISKIT_AVAILABLE = True
-except Exception:
-    QuantumCircuit = None
-    transpile = None
-    _backend = None
-    QISKIT_AVAILABLE = False
+_backend = BasicProvider().get_backend("basic_simulator")
 
 
 def _sample_bitstring(circuit: "QuantumCircuit") -> str:
@@ -25,9 +17,6 @@ def _sample_bitstring(circuit: "QuantumCircuit") -> str:
 
 
 def sample_superposition_index() -> int:
-    if not QISKIT_AVAILABLE:
-        return random.randint(0, 1)
-
     qc = QuantumCircuit(1, 1)
     qc.h(0)
     qc.measure(0, 0)
@@ -46,9 +35,6 @@ def sample_weighted_index(probabilities: Sequence[float]) -> int:
 
     normalized = [max(0.0, p) / total for p in probs]
 
-    if not QISKIT_AVAILABLE:
-        return random.choices(population=list(range(len(normalized))), weights=normalized, k=1)[0]
-
     n_outcomes = len(normalized)
     n_qubits = max(1, ceil(log2(n_outcomes)))
     basis_size = 2**n_qubits
@@ -61,10 +47,10 @@ def sample_weighted_index(probabilities: Sequence[float]) -> int:
     qc.initialize(amplitudes, list(range(n_qubits)))
     qc.measure(list(range(n_qubits)), list(range(n_qubits)))
 
-    for _ in range(3):
+    for _ in range(8):
         bitstring = _sample_bitstring(qc)
         idx = int(bitstring, 2)
         if idx < n_outcomes:
             return idx
 
-    return random.choices(population=list(range(n_outcomes)), weights=normalized, k=1)[0]
+    raise RuntimeError("Failed to sample a valid quantum outcome.")
