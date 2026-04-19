@@ -5,6 +5,8 @@ from dataclasses import dataclass, field
 import random
 from typing import Literal
 
+from .quantum import sample_superposition_index, sample_weighted_index
+
 StoneColor = Literal["B", "W"]
 
 
@@ -107,8 +109,6 @@ class QoGame:
                 )
             )
 
-            # Go suicide rule: after all transformations settle, the played
-            # stone's connected group must have at least one liberty.
             if pos in self.classical:
                 _, own_liberties = self._group_and_liberties(pos, self.classical)
                 if not own_liberties and not self._surrounded_by_own_color(pos, acting_player):
@@ -425,7 +425,8 @@ class QoGame:
             system = self.superpositions.pop(system_id, None)
             if system is None:
                 continue
-            chosen = random.choice(system.positions)
+            idx = sample_superposition_index()
+            chosen = system.positions[idx]
             self.classical[chosen] = system.owner
             events.append(
                 (
@@ -442,14 +443,8 @@ class QoGame:
             system = self.entanglements.pop(system_id, None)
             if system is None:
                 continue
-            idx = random.choices(
-                population=list(range(len(system.positions))),
-                weights=list(system.probabilities),
-                k=1,
-            )[0]
+            idx = sample_weighted_index(system.probabilities)
             original_colors = [self.classical.get(pos, system.initiator) for pos in system.positions]
-            # Use cyclic permutations so a 2-stone set has 50/50 stay/swap and
-            # a 3-stone set has 1/3 probability across three rotations.
             rotated_colors = [
                 original_colors[(i - idx) % len(original_colors)]
                 for i in range(len(original_colors))
@@ -532,7 +527,6 @@ class QoGame:
     ) -> float:
         line_points = self._sample_line_points(stone_pos, destination)
         if not line_points:
-            # Even short hops should fail more often than succeed.
             return 0.35
 
         enemy = opponent(color)
@@ -579,7 +573,6 @@ class QoGame:
         if not surrounded:
             return events
 
-        # Quantum systems collapse only when tunneling is about to resolve.
         if self.superpositions or self.entanglements:
             events.extend(self._collapse_all_quantum())
             candidate_positions = {
