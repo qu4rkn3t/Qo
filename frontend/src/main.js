@@ -12,18 +12,25 @@ const app = document.querySelector('#app');
 
 app.innerHTML = `
     <style>
+        html, body, #app {
+            height: 100%;
+            overflow: hidden;
+        }
+
         ::selection {
             background-color: #06b6d4;
             color: #0f172a;
         }
     </style>
-    <main class="mx-auto flex min-h-screen w-[min(1440px,98vw)] flex-col justify-center py-6">
-        <header class="mb-4">
-            <h1 class="text-center text-4xl font-semibold leading-none text-cyan-200">Qo</h1>
+    <main class="mx-auto flex h-screen w-[min(1280px,96vw)] flex-col overflow-hidden py-1.5">
+        <header class="mb-2">
+            <div class="flex justify-center">
+                <img src="/logotransparent.png" alt="Qo" class="h-16 w-auto select-none" draggable="false" />
+            </div>
         </header>
 
-        <section class="grid gap-4 lg:grid-cols-[290px_minmax(560px,min(78vh,760px))_320px] lg:items-stretch lg:justify-center">
-            <aside class="rounded-xl border border-slate-800 bg-slate-900/85 p-4 lg:h-[min(78vh,760px)]">
+        <section class="min-h-0 flex-1 overflow-hidden grid gap-2 lg:grid-cols-[250px_minmax(460px,1fr)_280px] lg:items-stretch lg:justify-center">
+            <aside class="min-h-0 overflow-auto rounded-xl border border-slate-800 bg-slate-900/85 p-3 lg:h-full">
                 <h2 class="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Game Controls</h2>
 
                 <div class="flex h-full flex-col gap-4">
@@ -47,6 +54,7 @@ app.innerHTML = `
                             <button data-mode="regular" class="mode-btn rounded border border-slate-700 bg-cyan-700 px-3 py-2 text-xs font-medium text-white">Regular</button>
                             <button data-mode="superposition" class="mode-btn rounded border border-slate-700 bg-slate-800 px-3 py-2 text-xs font-medium text-slate-200">Superposition</button>
                             <button data-mode="entangle" class="mode-btn rounded border border-slate-700 bg-slate-800 px-3 py-2 text-xs font-medium text-slate-200">Entangle</button>
+                            <button data-mode="collapse" class="mode-btn rounded border border-slate-700 bg-slate-800 px-3 py-2 text-xs font-medium text-slate-200">Collapse Set</button>
                         </div>
                     </div>
 
@@ -59,12 +67,13 @@ app.innerHTML = `
                                 <button id="clear-selection" class="rounded border border-slate-700 bg-slate-800 px-3 py-2 text-xs font-medium text-slate-100">Clear</button>
                             </div>
                         </div>
+                        <p class="px-1 text-[11px] text-slate-500">Game ends after two full pass rounds (4 consecutive passes).</p>
                         <p class="mt-auto px-1 text-xs text-slate-500">Tip: choose a mode, click intersections, then commit for quantum moves.</p>
                     </div>
                 </div>
             </aside>
 
-            <section class="rounded-xl border border-slate-800 bg-slate-900/85 p-4 lg:h-[min(78vh,760px)]">
+            <section class="min-h-0 rounded-xl border border-slate-800 bg-slate-900/85 p-3 lg:h-full">
                 <div class="flex h-full flex-col gap-3">
                     <div id="live-counts" class="flex items-center justify-center gap-3"></div>
                     <div class="min-h-0 flex-1 flex items-center justify-center">
@@ -73,8 +82,8 @@ app.innerHTML = `
                 </div>
             </section>
 
-            <aside class="grid gap-3 lg:h-[min(78vh,760px)] lg:grid-rows-[minmax(0,0.9fr)_minmax(0,1fr)_minmax(0,1.25fr)]">
-                <section class="rounded-xl border border-slate-800 bg-slate-900/85 p-5">
+            <aside class="min-h-0 grid gap-2 lg:h-full lg:grid-rows-[minmax(0,0.9fr)_minmax(0,1fr)_minmax(0,1.25fr)]">
+                <section class="rounded-xl border border-slate-800 bg-slate-900/85 p-4">
                     <h2 class="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Legend</h2>
                     <div class="h-full overflow-auto pr-2">
                         <ul class="space-y-1 text-xs text-slate-300">
@@ -87,19 +96,19 @@ app.innerHTML = `
                     </div>
                 </section>
 
-                <section class="rounded-xl border border-slate-800 bg-slate-900/85 p-5">
+                <section class="rounded-xl border border-slate-800 bg-slate-900/85 p-4">
                     <h2 class="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Quantum Systems</h2>
                     <div id="systems" class="h-full space-y-1 overflow-auto pr-2 text-xs text-slate-300 [overflow-wrap:anywhere]"></div>
                 </section>
 
-                <section class="rounded-xl border border-slate-800 bg-slate-900/85 p-5">
+                <section class="rounded-xl border border-slate-800 bg-slate-900/85 p-4">
                     <h2 class="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Event Log</h2>
                     <div id="log-list" class="h-full space-y-1 overflow-auto pr-2 text-xs text-slate-300 [overflow-wrap:anywhere]"></div>
                 </section>
             </aside>
         </section>
 
-        <p class="mt-4 text-center text-xs text-slate-500">Made in Chapel Hill 🐏</p>
+        <p class="mt-2 text-center text-xs text-slate-500">Made in Chapel Hill 🐏</p>
 
     <div id="winner-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/65 p-4">
       <div class="w-full max-w-sm rounded-xl border border-slate-700 bg-slate-900 p-5 text-center shadow-2xl">
@@ -279,6 +288,13 @@ async function commitQuantumSelection() {
             positions: state.selected.map((p) => [p.x, p.y]),
         });
         applyData(data);
+        return;
+    }
+
+    if (state.mode === 'collapse') {
+        state.log.unshift('Collapse mode: click a superposition or entangled stone on the board.');
+        renderLog();
+        return;
     }
 }
 
@@ -288,6 +304,24 @@ async function onCellClick(x, y) {
     }
 
     const cell = state.game.board[y][x];
+
+    if (state.mode === 'collapse') {
+        if (cell.kind === 'superposition') {
+            const data = await post('/move/collapse', { kind: 'superposition', systemId: cell.superpositionId });
+            applyData(data);
+            return;
+        }
+
+        if (cell.kind === 'entangled') {
+            const data = await post('/move/collapse', { kind: 'entanglement', systemId: cell.entanglementId });
+            applyData(data);
+            return;
+        }
+
+        state.log.unshift('Collapse mode: click a superposition (S#) or entangled (E#) stone.');
+        renderLog();
+        return;
+    }
 
     if (state.mode === 'regular') {
         const data = await post('/move/regular', { x, y });
@@ -365,6 +399,12 @@ function renderSelectionHint() {
 
     if (state.mode === 'regular') {
         selectionHintEl.textContent = 'Regular: click to place.';
+        commitQuantumBtn.disabled = true;
+        return;
+    }
+
+    if (state.mode === 'collapse') {
+        selectionHintEl.textContent = 'Collapse: click one superposition/entangled stone to collapse that set.';
         commitQuantumBtn.disabled = true;
         return;
     }

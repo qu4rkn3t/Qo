@@ -222,6 +222,42 @@ class QoGame:
             self._restore_state(snapshot)
             raise
 
+    def collapse_one_system(self, kind: Literal["superposition", "entanglement"], system_id: int) -> list[str]:
+        self._validate_turn()
+
+        snapshot = self._snapshot_state()
+        pre_move_signature = self._board_signature()
+        acting_player = self.current_player
+
+        try:
+            self.consecutive_passes = 0
+
+            if kind == "superposition":
+                if system_id not in self.superpositions:
+                    raise ValueError(f"Superposition S{system_id} does not exist.")
+                trigger_positions = set(self.superpositions[system_id].positions)
+                events = [f"{acting_player} forced collapse of S{system_id}."]
+                events.extend(self._collapse_superpositions({system_id}))
+            else:
+                if system_id not in self.entanglements:
+                    raise ValueError(f"Entanglement E{system_id} does not exist.")
+                trigger_positions = set(self.entanglements[system_id].positions)
+                events = [f"{acting_player} forced collapse of E{system_id}."]
+                events.extend(self._collapse_entanglements({system_id}))
+
+            events.extend(
+                self._resolve_turn_end(
+                    trigger_positions=trigger_positions,
+                    acting_player=acting_player,
+                    pre_move_signature=pre_move_signature,
+                    enforce_ko=True,
+                )
+            )
+            return events
+        except ValueError:
+            self._restore_state(snapshot)
+            raise
+
     def pass_turn(self) -> list[str]:
         self._validate_turn()
         self.consecutive_passes += 1

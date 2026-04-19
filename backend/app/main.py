@@ -7,6 +7,7 @@ from fastapi.responses import JSONResponse
 from .engine import QoGame
 from .schemas import (
     ApiResponse,
+    CollapseMoveRequest,
     EntangleMoveRequest,
     NewGameRequest,
     RegularMoveRequest,
@@ -73,5 +74,13 @@ def move_entangle(payload: EntangleMoveRequest):
 def move_pass():
     try:
         return _success(game.pass_turn())
+    except ValueError as exc:
+        return _error(str(exc))
+
+
+@app.post("/api/move/collapse", response_model=ApiResponse)
+def move_collapse(payload: CollapseMoveRequest):
+    try:
+        return _success(game.collapse_one_system(payload.kind, payload.systemId))
     except ValueError as exc:
         return _error(str(exc))
