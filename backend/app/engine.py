@@ -100,6 +100,11 @@ class QoGame:
             events = [f"{acting_player} placed a regular stone at ({x}, {y})."]
 
             events.extend(self._collapse_quantum_adjacent_to(pos))
+            if pos in self.classical:
+                _, own_liberties = self._group_and_liberties(pos, self.classical)
+                if not own_liberties and not self._self_blocked_exception(pos, acting_player):
+                    raise ValueError("Suicide is not allowed.")
+
             events.extend(
                 self._resolve_turn_end(
                     trigger_positions={pos},
@@ -108,19 +113,14 @@ class QoGame:
                     enforce_ko=True,
                 )
             )
-
-            if pos in self.classical:
-                _, own_liberties = self._group_and_liberties(pos, self.classical)
-                if not own_liberties and not self._surrounded_by_own_color(pos, acting_player):
-                    raise ValueError("Suicide is not allowed.")
             return events
         except ValueError:
             self._restore_state(snapshot)
             raise
 
-    def _surrounded_by_own_color(self, pos: tuple[int, int], color: StoneColor) -> bool:
+    def _self_blocked_exception(self, pos: tuple[int, int], color: StoneColor) -> bool:
         neighbors = self._neighbors(pos[0], pos[1])
-        return all(self.classical.get(np) == color for np in neighbors)
+        return any(self.classical.get(np) == color for np in neighbors)
 
     def place_superposition(self, positions: list[list[int]]) -> list[str]:
         self._validate_turn()
