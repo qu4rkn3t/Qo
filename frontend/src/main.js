@@ -17,6 +17,69 @@ app.innerHTML = `
             overflow: hidden;
         }
 
+        @keyframes superpositionPulse {
+            0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.32; }
+            50% { transform: translate(-50%, -50%) scale(1.06); opacity: 0.58; }
+        }
+
+        @keyframes superpositionSweep {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes entangleSpin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes entangleFlicker {
+            0%, 100% { opacity: 0.26; }
+            50% { opacity: 0.5; }
+        }
+
+        .q-superposition-aura {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            width: 88%;
+            height: 88%;
+            border-radius: 999px;
+            animation: superpositionPulse 2.6s ease-in-out infinite;
+            filter: saturate(1.04);
+            pointer-events: none;
+        }
+
+        .q-superposition-sweep {
+            position: absolute;
+            inset: -4%;
+            border-radius: 999px;
+            border: 1px dashed rgba(125, 211, 252, 0.52);
+            animation: superpositionSweep 5.4s linear infinite;
+            pointer-events: none;
+        }
+
+        .q-entangled-orbit {
+            position: absolute;
+            inset: -5%;
+            border-radius: 999px;
+            border: 1px solid rgba(244, 114, 182, 0.42);
+            border-right-color: rgba(125, 211, 252, 0.58);
+            border-top-color: rgba(196, 181, 253, 0.58);
+            animation: entangleSpin 6s linear infinite;
+            pointer-events: none;
+        }
+
+        .q-entangled-aura {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            width: 92%;
+            height: 92%;
+            border-radius: 999px;
+            animation: entangleFlicker 2.8s ease-in-out infinite;
+            pointer-events: none;
+        }
+
         ::selection {
             background-color: #06b6d4;
             color: #0f172a;
@@ -91,7 +154,9 @@ app.innerHTML = `
                             <li class="flex items-center gap-2"><span class="h-3 w-3 rounded-full bg-slate-100 ring-1 ring-slate-500"></span> Regular White</li>
                             <li class="flex items-center gap-2"><span class="h-3 w-3 rounded-full border-2 border-dashed border-cyan-300"></span> Superposition</li>
                             <li class="flex items-center gap-2"><span class="h-3 w-3 rounded-full border-2 border-pink-300 shadow-[0_0_0_2px_rgba(244,114,182,0.25)]"></span> Entanglement</li>
-                            <li class="flex items-center gap-2"><span class="h-3 w-3 rounded-full border-2 border-emerald-300"></span> Border color = set</li>
+                            <li class="flex items-center gap-2"><span class="h-3 w-3 rounded-full border border-cyan-300"></span> Selected (superposition)</li>
+                            <li class="flex items-center gap-2"><span class="h-3 w-3 rounded-full border border-pink-300"></span> Selected (entanglement)</li>
+                            <li class="text-slate-400">Collapse mode: click an S#/E# stone.</li>
                         </ul>
                     </div>
                 </section>
@@ -470,6 +535,21 @@ function renderBoard() {
             if (isSelected(x, y)) {
                 hLine.className = 'pointer-events-none absolute top-1/2 h-[2px] -translate-y-1/2 bg-cyan-300/80';
                 vLine.className = 'pointer-events-none absolute left-1/2 w-[2px] -translate-x-1/2 bg-cyan-300/80';
+
+                const color = state.mode === 'entangle' ? 'rgba(244,114,182,0.92)' : 'rgba(34,211,238,0.9)';
+                const glow = state.mode === 'entangle' ? 'rgba(244,114,182,0.2)' : 'rgba(34,211,238,0.18)';
+
+                const halo = document.createElement('span');
+                halo.className = 'pointer-events-none absolute inset-[16%] rounded-full border';
+                halo.style.borderColor = color;
+                halo.style.boxShadow = `0 0 0 1px ${glow}`;
+                item.appendChild(halo);
+
+                const dot = document.createElement('span');
+                dot.className = 'pointer-events-none absolute left-1/2 top-1/2 h-[6px] w-[6px] -translate-x-1/2 -translate-y-1/2 rounded-full';
+                dot.style.backgroundColor = color;
+                dot.style.boxShadow = `0 0 5px ${glow}`;
+                item.appendChild(dot);
             }
 
             if (cell.kind !== 'empty') {
@@ -479,19 +559,42 @@ function renderBoard() {
                 if (cell.kind === 'superposition') {
                     const color = setColor('superposition', cell.superpositionId);
                     stone.style.border = `2px dashed ${color}`;
-                    stone.style.boxShadow = 'inset 0 0 0 2px rgba(8,18,26,0.9)';
+                    stone.style.boxShadow = `inset 0 0 0 2px rgba(8,18,26,0.9), 0 0 9px color-mix(in srgb, ${color} 36%, transparent)`;
+
+                    const aura = document.createElement('span');
+                    aura.className = 'q-superposition-aura';
+                    aura.style.background = `radial-gradient(circle, color-mix(in srgb, ${color} 42%, transparent) 0%, rgba(8,18,26,0.0) 76%)`;
+                    stone.appendChild(aura);
+
+                    const sweep = document.createElement('span');
+                    sweep.className = 'q-superposition-sweep';
+                    sweep.style.borderColor = color;
+                    stone.appendChild(sweep);
 
                     const core = document.createElement('span');
-                    core.className = 'absolute left-1/2 top-1/2 h-[30%] w-[30%] -translate-x-1/2 -translate-y-1/2 rounded-full';
+                    core.className = 'absolute left-1/2 top-1/2 h-[24%] w-[24%] -translate-x-1/2 -translate-y-1/2 rounded-full';
                     core.style.background = color;
                     core.style.opacity = '0.72';
+                    core.style.boxShadow = `0 0 6px color-mix(in srgb, ${color} 48%, transparent)`;
                     stone.appendChild(core);
                 }
 
                 if (cell.kind === 'entangled') {
                     const color = setColor('entangled', cell.entanglementId);
                     stone.style.border = `2px solid ${color}`;
-                    stone.style.boxShadow = `inset 0 0 0 2px rgba(8,18,26,0.9), 0 0 0 4px color-mix(in srgb, ${color} 26%, transparent)`;
+                    stone.style.boxShadow = `inset 0 0 0 2px rgba(8,18,26,0.9), 0 0 0 3px color-mix(in srgb, ${color} 20%, transparent), 0 0 8px color-mix(in srgb, ${color} 32%, transparent)`;
+
+                    const aura = document.createElement('span');
+                    aura.className = 'q-entangled-aura';
+                    aura.style.background = `radial-gradient(circle, color-mix(in srgb, ${color} 24%, transparent) 0%, rgba(8,18,26,0.0) 76%)`;
+                    stone.appendChild(aura);
+
+                    const orbit = document.createElement('span');
+                    orbit.className = 'q-entangled-orbit';
+                    orbit.style.borderColor = color;
+                    orbit.style.borderRightColor = 'rgba(125, 211, 252, 0.88)';
+                    orbit.style.borderTopColor = 'rgba(196, 181, 253, 0.92)';
+                    stone.appendChild(orbit);
 
                     const innerRing = document.createElement('span');
                     innerRing.className = 'absolute inset-[15%] rounded-full border';
